@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>小学数学</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: #f0f2f8;
+      color: #2d2d2d;
+      min-height: 100vh;
+    }
+
+    /* ── 顶部 ── */
+    .header {
+      background: linear-gradient(135deg, #4f7cff 0%, #7c4fff 100%);
+      color: white;
+      padding: 24px 20px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 1.4rem; letter-spacing: 2px; }
+    .header p  { font-size: 0.78rem; opacity: 0.75; margin-top: 6px; }
+
+    /* ── 学期 Tab ── */
+    .season-bar {
+      background: white;
+      display: flex;
+      border-bottom: 1px solid #e8eaf0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .season-bar::-webkit-scrollbar { display: none; }
+    .s-tab {
+      flex: 0 0 auto;
+      padding: 14px 22px;
+      font-size: 0.88rem;
+      color: #888;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .s-tab.active {
+      color: #4f7cff;
+      border-bottom-color: #4f7cff;
+      font-weight: 700;
+    }
+
+    /* ── 内容区 ── */
+    .season-panel { display: none; }
+    .season-panel.active { display: block; }
+    .content {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 16px 12px 40px;
+    }
+
+    /* ── 年级卡片 ── */
+    .grade-card {
+      background: white;
+      border-radius: 14px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .grade-hd {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .grade-hd:active { background: #fafafa; }
+    .grade-badge {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 0.88rem; color: white;
+      flex-shrink: 0;
+    }
+    .g1 { background: #ff6b6b; }
+    .g2 { background: #ff9f43; }
+    .g3 { background: #1dd1a1; }
+    .g4 { background: #4f7cff; }
+    .g5 { background: #9b59b6; }
+    .g6 { background: #ee5a24; }
+    .grade-title { font-weight: 700; font-size: 1rem; flex: 1; }
+    .grade-count  { font-size: 0.75rem; color: #aaa; }
+    .chevron {
+      width: 18px; height: 18px;
+      fill: none; stroke: #bbb; stroke-width: 2.5;
+      stroke-linecap: round; stroke-linejoin: round;
+      transition: transform .25s;
+    }
+    .grade-card.open .chevron { transform: rotate(90deg); }
+    .grade-bd { display: none; padding: 0 10px 10px; }
+    .grade-card.open .grade-bd { display: block; }
+
+    /* ── 课程类型 ── */
+    .cat-item {
+      border-radius: 10px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .cat-hd {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      border-radius: 10px;
+      transition: background .15s;
+    }
+    .cat-hd:active { background: #f0f2f8; }
+    .cat-icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .cat-z .cat-hd { background: #fff4f4; }
+    .cat-z .cat-icon { background: #ffdede; }
+    .cat-j .cat-hd { background: #fffbf0; }
+    .cat-j .cat-icon { background: #ffe8b0; }
+    .cat-c .cat-hd { background: #f0f6ff; }
+    .cat-c .cat-icon { background: #cfe0ff; }
+    .cat-z.open .cat-hd { background: #ffe8e8; }
+    .cat-j.open .cat-hd { background: #fff0cc; }
+    .cat-c.open .cat-hd { background: #ddeeff; }
+    .cat-name { font-size: 0.88rem; font-weight: 600; flex: 1; }
+    .cat-chevron {
+      width: 15px; height: 15px;
+      fill: none; stroke: #bbb; stroke-width: 2.5;
+      stroke-linecap: round; stroke-linejoin: round;
+      transition: transform .25s;
+    }
+    .cat-item.open .cat-chevron { transform: rotate(90deg); }
+    .cat-bd { display: none; padding: 8px 6px 4px; }
+    .cat-item.open .cat-bd { display: block; }
+
+    /* ── 讲次网格 ── */
+    .lesson-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+    }
+    @media (min-width: 480px) {
+      .lesson-grid { grid-template-columns: repeat(6, 1fr); }
+    }
+
+    /* 直接跳转型（重难点预习）*/
+    a.lesson-btn {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 9px 4px;
+      border-radius: 9px;
+      text-decoration: none;
+      background: white;
+      border: 1.5px solid #e6eaff;
+      color: #4f7cff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1.3;
+      transition: all .18s;
+    }
+    a.lesson-btn:hover  { background: #4f7cff; color: white; border-color: #4f7cff; }
+    a.lesson-btn:active { transform: scale(0.95); }
+    a.lesson-btn[href="#"] {
+      color: #bbb; border-color: #e8eaee; border-style: dashed; cursor: default;
+    }
+    a.lesson-btn[href="#"]:hover { background: white; color: #bbb; border-color: #e8eaee; }
+
+    /* 弹窗型（加油站 / 创新挑战）*/
+    button.lesson-btn {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 9px 4px;
+      border-radius: 9px;
+      background: white;
+      border: 1.5px solid #e6eaff;
+      color: #4f7cff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1.3;
+      transition: all .18s;
+      cursor: pointer;
+      width: 100%;
+    }
+    button.lesson-btn:hover  { background: #4f7cff; color: white; border-color: #4f7cff; }
+    button.lesson-btn:active { transform: scale(0.95); }
+    button.lesson-btn.empty {
+      color: #bbb; border-color: #e8eaee; border-style: dashed; cursor: default;
+    }
+    button.lesson-btn.empty:hover { background: white; color: #bbb; border-color: #e8eaee; }
+
+    .lnum { font-size: 1rem; font-weight: 800; }
+
+    /* ── 底部弹窗 ── */
+    .sheet-mask {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .sheet-mask.show {
+      display: flex;
+      animation: maskIn .2s ease;
+    }
+    @keyframes maskIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .sheet {
+      background: white;
+      width: 100%;
+      max-width: 500px;
+      border-radius: 20px 20px 0 0;
+      padding: 0 0 env(safe-area-inset-bottom, 16px);
+      animation: sheetUp .25s cubic-bezier(.22,.61,.36,1);
+    }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    .sheet-handle {
+      width: 40px; height: 4px;
+      background: #ddd;
+      border-radius: 2px;
+      margin: 12px auto 0;
+    }
+    .sheet-title {
+      text-align: center;
+      font-size: 0.82rem;
+      color: #888;
+      padding: 10px 20px 4px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .sheet-title strong { color: #2d2d2d; font-size: 0.95rem; display: block; margin-bottom: 2px; }
+
+    .sheet-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 16px 20px 20px;
+    }
+
+    .sub-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all .15s;
+      border: none;
+      cursor: pointer;
+    }
+    .sub-btn .sub-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .sub-btn .sub-label { flex: 1; text-align: left; }
+    .sub-btn .sub-arrow {
+      font-size: 1rem;
+      opacity: 0.35;
+    }
+
+    /* 加油站子项颜色 */
+    .sub-gong  { background: #fff8ee; color: #e67e22; }
+    .sub-gong  .sub-icon { background: #ffe0b0; }
+    .sub-gong:hover  { background: #e67e22; color: white; }
+    .sub-gong:hover  .sub-icon { background: rgba(255,255,255,0.25); }
+
+    .sub-jichu { background: #f0fff8; color: #27ae60; }
+    .sub-jichu .sub-icon { background: #b8f0d0; }
+    .sub-jichu:hover { background: #27ae60; color: white; }
+    .sub-jichu:hover .sub-icon { background: rgba(255,255,255,0.25); }
+
+    .sub-nengli { background: #f0f0ff; color: #4f7cff; }
+    .sub-nengli .sub-icon { background: #cfd8ff; }
+    .sub-nengli:hover { background: #4f7cff; color: white; }
+    .sub-nengli:hover .sub-icon { background: rgba(255,255,255,0.25); }
+
+    /* 创新挑战子项颜色 */
+    .sub-keben  { background: #fff4f9; color: #e056a0; }
+    .sub-keben  .sub-icon { background: #ffc8e4; }
+    .sub-keben:hover  { background: #e056a0; color: white; }
+    .sub-keben:hover  .sub-icon { background: rgba(255,255,255,0.25); }
+
+    .sub-jyz   { background: #fffbf0; color: #d4ac0d; }
+    .sub-jyz   .sub-icon { background: #faeab0; }
+    .sub-jyz:hover   { background: #d4ac0d; color: white; }
+    .sub-jyz:hover   .sub-icon { background: rgba(255,255,255,0.25); }
+
+    /* 空链接 */
+    .sub-btn.empty {
+      background: #f8f8f8; color: #bbb; cursor: default;
+    }
+    .sub-btn.empty .sub-icon { background: #eeeeee; }
+    .sub-btn.empty:hover { background: #f8f8f8; color: #bbb; }
+    .sub-btn.empty:hover .sub-icon { background: #eeeeee; }
+
+    .sheet-cancel {
+      margin: 0 20px 8px;
+      padding: 14px;
+      width: calc(100% - 40px);
+      border: none;
+      border-radius: 12px;
+      background: #f2f3f7;
+      color: #555;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .sheet-cancel:active { background: #e5e6ea; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📐 小学数学</h1>
+  <p>选择学期 → 年级 → 课程类型 → 讲次</p>
+</div>
+
+<div class="season-bar" id="seasonBar"></div>
+<div id="app"></div>
+
+<!-- 底部弹窗 -->
+<div class="sheet-mask" id="sheetMask" onclick="closeSheet(event)">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetTitle">
+      <strong id="sheetLessonName"></strong>
+      <span id="sheetCatName"></span>
+    </div>
+    <div class="sheet-btns" id="sheetBtns"></div>
+    <button class="sheet-cancel" onclick="hideSheet()">取消</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  ✏️  填写视频链接说明：
+//
+//  重难点预习：每讲是一个字符串 URL，直接跳转
+//    ["第1讲URL", "第2讲URL", ...]
+//
+//  加油站：每讲是一个对象，包含三个子项
+//    [ { "本讲巩固": "URL", "基础过关": "URL", "能力提升": "URL" }, ... ]
+//
+//  创新挑战：每讲是一个对象，包含两个子项
+//    [ { "课本": "URL", "加油站": "URL" }, ... ]
+//
+//  暂无链接时留空字符串 ""
+// ═══════════════════════════════════════════════════════════════
+const DATA = {
+      "春季": {
+    icon: "🌸",
+    grades: {
+      "一年级": {
+        "重难点预习": [
+          "https://b23.tv/4RDJkL8",
+          "https://b23.tv/hx7RInw",
+          "https://b23.tv/PymxACa",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lZSjbtzbDz",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lvBIt6j41k",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mFUJz4zN7E",
+          "https://b23.tv/nRc6tfw",
+          "https://b23.tv/jEUA1lX",
+          "https://b23.tv/JXxLmb7",
+          "https://b23.tv/BU2q7zw",
+          "https://short.jiaoyanyun.com/nLx2xqIe7B",
+          "https://short.jiaoyanyun.com/oQhDF3tXJt",
+          "https://short.jiaoyanyun.com/ompo3kLS6s",
+          "https://short.jiaoyanyun.com/p9mwAnHXJC",
+          "https://short.jiaoyanyun.com/pV5YvDgOXq"
+        ],
+        "加油站": [
+          "https://b23.tv/J8tBxid",
+          "https://b23.tv/IlubMs3",
+          "https://b23.tv/jdAfOJG",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lZT6CqwUR2",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lvDCH6NLG5",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mFULukKgxY",
+          "https://b23.tv/uKC0bVn",
+          "https://b23.tv/AZ5O1MU",
+          "https://b23.tv/xPGNC9r",
+          "https://b23.tv/gUcD2Nu",
+          "https://short.jiaoyanyun.com/nLzBqkfmFu",
+          "https://short.jiaoyanyun.com/oRXPuN62yT",
+          "https://short.jiaoyanyun.com/omy18Koo0w",
+          "https://short.jiaoyanyun.com/p9rxZcKtlK",
+          "https://short.jiaoyanyun.com/pZ8aZ7gHGE"
+        ]
+      },
+      "二年级": {
+        "重难点预习": [
+          "https://b23.tv/zhVtpxc",
+          "https://b23.tv/eifBsLc",
+          "https://b23.tv/uean859",
+          "https://b23.tv/LLlZTgr",
+          "https://b23.tv/Owehk85",
+          "https://b23.tv/SxdzOCE",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mIgwocXs3N",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mjzrTchaG6",
+          "https://b23.tv/vBdQS96",
+          "https://b23.tv/pvaYdyZ",
+          "https://b23.tv/hSfXTV9",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oUopvV9m7M",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=osbx3hcouO"
+        ],
+        "加油站": [
+          "https://b23.tv/MiXTpDP",
+          "https://b23.tv/PY8fe70",
+          "https://b23.tv/TvtGfka",
+          "https://short.jiaoyanyun.com/lQofSwRVyX",
+          "https://b23.tv/ZB2vAvG",
+          "https://b23.tv/7cP42vA",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mIcxGe7dKO",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mjzw7faDvC",
+          "https://b23.tv/y8orxzC",
+          "https://b23.tv/yYCyaM9",
+          "https://b23.tv/JOJh580",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oUonjnC1Lq",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oshBh1dfLi"
+        ],
+        "创新挑战": [
+          {"课本": "https://b23.tv/dbeGnk9", "加油站": "https://b23.tv/bkYexFN"}
+        ]
+      },
+      "三年级": {
+        "重难点预习": [
+          "https://b23.tv/zksHpdY",
+          "https://b23.tv/plsETDr",
+          "https://b23.tv/kE4oeFp",
+          "https://b23.tv/AnNzSmM",
+          "https://short.jiaoyanyun.com/lsMfrZMG6U",
+          "https://b23.tv/1gTTBaf",
+          "https://short.jiaoyanyun.com/mdY5YwojkA",
+          "https://b23.tv/cRjtbY2",
+          "https://short.jiaoyanyun.com/mzOfanmYzF",
+          "https://short.jiaoyanyun.com/nLld31aLBa",
+          "https://short.jiaoyanyun.com/oQW8CNqQrV",
+          "https://short.jiaoyanyun.com/omRtZIRmni",
+          "https://short.jiaoyanyun.com/pA0Gs91zKP"
+        ],
+        "加油站": [
+          "https://b23.tv/hMW5Vg1",
+          {"本讲巩固": "https://b23.tv/IFen40v", "基础过关": "https://b23.tv/8txDEXb", "能力提升": "https://b23.tv/rJhHnQq"},
+          {"本讲巩固": "https://b23.tv/iSgbJuF", "基础过关": "https://b23.tv/IM9mg3U", "能力提升": "https://b23.tv/2GsFoTR"},
+          {"本讲巩固": "https://short.jiaoyanyun.com/lZOH8SDb7K", "基础过关": "https://short.jiaoyanyun.com/lZOLFm7V1G", "能力提升": "https://short.jiaoyanyun.com/lZOSGNhFM5"},
+          {"本讲巩固": "https://short.jiaoyanyun.com/lsNFljdRVC", "基础过关": "https://short.jiaoyanyun.com/lsNOnRClwr", "能力提升": "https://short.jiaoyanyun.com/lsOsyKyVS9"},
+          {"本讲巩固": "https://b23.tv/nTV6ypL", "基础过关": "https://b23.tv/qm8Sl3c", "能力提升": "https://b23.tv/V8IkQNf"},
+          {"本讲巩固": "https://short.jiaoyanyun.com/mdnry0WUWr", "基础过关": "https://short.jiaoyanyun.com/mdoQzEZD3N", "能力提升": "https://short.jiaoyanyun.com/mda6BrMoMM"},
+          {"本讲巩固": "https://b23.tv/IdybbcU", "基础过关": "https://b23.tv/8hXnNUv", "能力提升": "https://b23.tv/MJpIn9x"},
+          {"本讲巩固": "https://short.jiaoyanyun.com/mzOjq1c6c6", "基础过关": "https://short.jiaoyanyun.com/mzOo4pKZ3S", "能力提升": "https://short.jiaoyanyun.com/mzOx7rDZDp"},
+          {"本讲巩固": "https://short.jiaoyanyun.com/nMABeLTMlG", "基础过关": "https://short.jiaoyanyun.com/nLljUvYcmw", "能力提升": "https://short.jiaoyanyun.com/nLllTeW0In"},
+          {"本讲巩固": "https://short.jiaoyanyun.com/oQWGIEeOvV", "基础过关": "https://short.jiaoyanyun.com/oQWHpoMSKL", "能力提升": "https://short.jiaoyanyun.com/oQWKThirtS"},
+          {"基础过关": "https://short.jiaoyanyun.com/omTXjpQ5PB", "能力提升": "https://short.jiaoyanyun.com/omUDb8B7XG", "本讲巩固": "https://short.jiaoyanyun.com/omSxf6Zu3h"},
+          {"本讲巩固": "https://short.jiaoyanyun.com/pA0LBoleAP", "基础过关": "https://short.jiaoyanyun.com/pA0N3KwNNq", "能力提升": "https://short.jiaoyanyun.com/pA0QcpjoJ8"}
+        ],
+        "创新挑战": [
+          {"课本": "https://b23.tv/EnzB47M", "加油站": "https://b23.tv/2XSGOtd"},
+          {"课本": "https://b23.tv/dFHatpR", "加油站": "https://b23.tv/IsvepUt"},
+          {"课本": "https://b23.tv/lFiWl3N", "加油站": "https://b23.tv/5myhDh7"},
+          {"课本": "https://short.jiaoyanyun.com/lZObHbB5ET", "加油站": "https://short.jiaoyanyun.com/lZOU5515ED"},
+          {"课本": "https://short.jiaoyanyun.com/lsOh9WMch0", "加油站": "https://short.jiaoyanyun.com/lsPC0f3jX3"},
+          {"课本": "https://b23.tv/y6HlB6D", "加油站": "https://b23.tv/9gYHopJ"},
+          {"课本": "https://short.jiaoyanyun.com/mdZ2nCGUTF", "加油站": "https://short.jiaoyanyun.com/mdbCKoeo05"},
+          {"课本": "https://b23.tv/6iVxNVh", "加油站": "https://b23.tv/1Ht23ar"},
+          {"课本": "https://short.jiaoyanyun.com/mzOhhqDT9O", "加油站": "https://short.jiaoyanyun.com/mzOyoVWaQX"},
+          {"课本": "https://short.jiaoyanyun.com/nLlfa223u6", "加油站": "https://short.jiaoyanyun.com/nLlhCtsPfW"},
+          {"课本": "https://short.jiaoyanyun.com/oQWBoSjcMk", "加油站": "https://short.jiaoyanyun.com/oQWEn1yYu5"},
+          {"课本": "https://short.jiaoyanyun.com/omVTpfgCab", "加油站": "https://short.jiaoyanyun.com/omW6WVBFYT"},
+          {"课本": "https://short.jiaoyanyun.com/pA0SuLcxdl", "加油站": ""}
+        ]
+      },
+      "四年级": {
+        "重难点预习": [
+          "https://b23.tv/EGa6a7X",
+          "https://b23.tv/RcRJ2Uf",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lDC5UlTOc3",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=laFqhnw7iT",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lvmBB1PN57",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mHIBcnMR7M",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mf1iO8f5aQ",
+          "https://b23.tv/JgHQk2y",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n19AHodQA2",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=nMKXekHYti",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oS3iZWXYCM",
+          "https://b23.tv/MvMupzP"
+        ],
+        "加油站": [
+          "https://b23.tv/hI9W8iL",
+          "https://b23.tv/1lCkQNR",
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lDCCbQIr2q", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lDC9iBT0h2", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lDCEGAWk8i"},
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lfBs0CbAMj", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lfBuO3L8A0", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lfBvIk0NV3"},
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lvmEwg7OhY", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lvmHA2Gl9A", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lvmJys2V97"},
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mHVUyFn8tw", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mHbOyLGYan", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mHdhDKLzE4"},
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mf7IF1lpba", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mf7L9Laznk", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mf7NTB7B1S"},
+          {"本讲巩固": "https://b23.tv/gSuoQ1l", "基础过关": "https://b23.tv/NS0GY5C", "能力提升": "https://b23.tv/Z4l2k7P"},
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n3JLtYHlQU", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n3Kp864H1S", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n3O8y2FZKI"},
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=nMKakDZanu", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=nMKimkrxqK", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=nMKfZnCB8a"},
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oXUIoiKViQ", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oXUGz4XIC8", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oXUESmwCsg"},
+          {"本讲巩固": "https://b23.tv/SKthO1v", "基础过关": "https://b23.tv/LBcnNyx", "能力提升": "https://b23.tv/RWCGZfv"}
+        ],
+        "创新挑战": [
+          "https://b23.tv/788IS0y",
+          "https://b23.tv/5yEPsE9",
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lDCFtlmuiS", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lDCHsk4bYF"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lfBwWEAZMa", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lfBxcQRMvc"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lvmPYJrnf7", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lvmPYJrnf7"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mHh1C1pWUO", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mHehavnc9p"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mf7Q64b2A4", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mf7OuaBwES"},
+          {"课本": "https://b23.tv/nzDV84G", "加油站": "https://b23.tv/SuSA7iY"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n6ZKvaicvg", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n6ZNhC5ZAk"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=nMKpDHgbHC", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=nMKn7ss4ti"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oXqXlobAcS", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oXqvkCF0v8"},
+          {"课本": "", "加油站": "https://b23.tv/eFjYExl"}
+        ]
+      },
+      "五年级": {
+        "重难点预习": [
+          "https://b23.tv/RbjlOP1",
+          "https://b23.tv/C7V7m0A",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lFfVXY9dI4",
+          "https://b23.tv/UtrqOV6",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lyoB0RARro",
+          "https://b23.tv/HohRBR8",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mgWOlUJp1i",
+          "https://b23.tv/PvT50JQ",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n1Ck2IY4EC",
+          "https://b23.tv/dGDRZPx",
+          "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oQzyYdsa12",
+          "https://b23.tv/VrlsuA9",
+          "https://b23.tv/d2iXvUK"
+        ],
+        "加油站": [
+          {"本讲巩固": "https://b23.tv/lvgXztA", "基础过关": "https://b23.tv/YLsRL4k", "能力提升": "https://b23.tv/dYJMmmK"},
+          "https://b23.tv/sReybIh",
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lMEKOQgNQd", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lFfnapLU3b", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lFfpdfCeW4"},
+          "https://b23.tv/jstQeiW",
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lyoQKygIMr", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lyoSOBFLXA", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lyoV1j2Fzo"},
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mFMwDFERJk", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mFN5YLln0b", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mFN7tV2Qq1"},
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mgWSnTFRGQ", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mgWWfnFR30", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mgWYJyH3A0"},
+          "https://b23.tv/L40r4b2",
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n2iUZ7zCSm", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n2iYvbRNl8", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n2iaGpJfN2"},
+          "https://b23.tv/uIw5tZc",
+          {"本讲巩固": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oRjbYd5HZO", "基础过关": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oRjZptuMSW", "能力提升": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oRjct5q9aa"},
+          {"本讲巩固": "https://meeting.tencent.com/crm/2jxLwqrVc5", "基础过关": "https://meeting.tencent.com/crm/29QZ74pw8c", "能力提升": "https://meeting.tencent.com/crm/l689pjXQ3d"},
+          {"本讲巩固": "https://b23.tv/JLuPZvj", "基础过关": "https://b23.tv/sj2zSkw", "能力提升": "https://b23.tv/53VmpAl"}
+        ],
+        "创新挑战": [
+          "",
+          "https://b23.tv/bdGDDcH",
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lFg8tlgU7A", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lFgAdpkFQt"},
+          "https://b23.tv/TWMFEqY",
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lyoA5taNT2", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=lyoaDC2fBs"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mFN9Xiu36X", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mFNAoQtqXU"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mgegqKvXhu", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=mgcDAaahig"},
+          {"课本": "https://b23.tv/1XvJNPz", "加油站": "https://b23.tv/1XvJNPz"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n2idpnkqJq", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=n2icCJsF7m"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=nSXl5XOdji", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=nSXuJeCttm"},
+          {"课本": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oRjfugQM2w", "加油站": "https://xiaojiangshi.jiaoyanyun.com/#/m/video?key=oRjeKcrhIG"},
+          {"课本": "https://b23.tv/CXrWf2d", "加油站": "https://b23.tv/afjvse1"},
+          {"课本": "https://b23.tv/RonRukh", "加油站": "https://b23.tv/PB50Uy0"}
+        ]
+      }
+    }
+  },
+  "暑假": {
+    icon: "☀️",
+    grades: {
+      "一年级": {
+        "重难点预习": [
+          "","","","","","","","","","","",""
+        ],
+        "加油站": [
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""}
+        ],
+        "创新挑战": [
+          {"课本":"","加油站":""},
+          {"课本":"","加油站":""},
+          {"课本":"","加油站":""},
+          {"课本":"","加油站":""},
+          {"课本":"","加油站":""},
+          {"课本":"","加油站":""},
+          {"课本":"","加油站":""},
+          {"课本":"","加油站":""},
+          {"课本":"","加油站":""},
+          {"课本":"","加油站":""},
+          {"课本":"","加油站":""},
+          {"课本":"","加油站":""}
+        ]
+      },
+      "二年级": {
+        "重难点预习": ["","","","","","","","","","","",""],
+        "加油站": [
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""}
+        ],
+        "创新挑战": [
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""}
+        ]
+      },
+      "三年级": {
+        "重难点预习": ["","","","","","","","","","","",""],
+        "加油站": [
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""}
+        ],
+        "创新挑战": [
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""}
+        ]
+      },
+      "四年级": {
+        "重难点预习": ["","","","","","","","","","","",""],
+        "加油站": [
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""}
+        ],
+        "创新挑战": [
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""}
+        ]
+      },
+      "五年级": {
+        "重难点预习": ["","","","","","","","","","","",""],
+        "加油站": [
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""}
+        ],
+        "创新挑战": [
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""}
+        ]
+      },
+      "六年级": {
+        "重难点预习": ["","","","","","","","","","","",""],
+        "加油站": [
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""},
+          {"本讲巩固":"","基础过关":"","能力提升":""}
+        ],
+        "创新挑战": [
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""},
+          {"课本":"","加油站":""},{"课本":"","加油站":""},{"课本":"","加油站":""}
+        ]
+      }
+    }
+  }
+
+
+  // 继续添加学期：秋季/寒假 同理
+};
+
+// ═══════════════════════════════════════════════
+//  子项配置（样式 + 图标）
+// ═══════════════════════════════════════════════
+const SUB_META = {
+  "本讲巩固": { cls: "sub-gong",   emoji: "📝" },
+  "基础过关": { cls: "sub-jichu",  emoji: "✅" },
+  "能力提升": { cls: "sub-nengli", emoji: "⚡" },
+  "课本":     { cls: "sub-keben",  emoji: "📖" },
+  "加油站":   { cls: "sub-jyz",    emoji: "⛽" }
+};
+
+const GRADE_COLORS = ["g1","g2","g3","g4","g5","g6"];
+const CAT_META = {
+  "重难点预习": { cls: "cat-z", emoji: "🎯" },
+  "加油站":     { cls: "cat-j", emoji: "⛽" },
+  "创新挑战":   { cls: "cat-c", emoji: "🚀" }
+};
+const SVG_CHEVRON = (cls) =>
+  `<svg class="${cls}" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;
+
+// 判断某讲是否有任意子链接
+function hasAnyLink(entry) {
+  if (typeof entry === "string") return !!entry;
+  return Object.values(entry).some(v => !!v);
+}
+
+function renderSeason(seasonName, seasonData) {
+  const grades = Object.entries(seasonData.grades);
+  let html = `<div class="content">`;
+  grades.forEach(([gradeName, cats], gi) => {
+    const colorCls = GRADE_COLORS[gi] || "g1";
+    const catCount = Object.keys(cats).length;
+    const lessonCount = Object.values(cats).reduce((sum, lessons) => {
+      return sum + lessons.filter(l => hasAnyLink(l)).length;
+    }, 0);
+    const shortName = gradeName.replace("年级", "");
+    html += `
+    <div class="grade-card" id="gc-${seasonName}-${gi}">
+      <div class="grade-hd" onclick="toggleGrade('gc-${seasonName}-${gi}')">
+        <div class="grade-badge ${colorCls}">${shortName}</div>
+        <div class="grade-title">${gradeName}</div>
+        <div class="grade-count">${catCount} 类 · ${lessonCount} 讲</div>
+        ${SVG_CHEVRON("chevron")}
+      </div>
+      <div class="grade-bd">`;
+
+    Object.entries(cats).forEach(([catName, lessons], ci) => {
+      const meta = CAT_META[catName] || { cls: "cat-z", emoji: "📖" };
+      const catId = `cat-${seasonName}-${gi}-${ci}`;
+      // 每讲独立判断类型（同一分类内可混合直接链接和子项）
+
+      html += `
+        <div class="cat-item ${meta.cls}" id="${catId}">
+          <div class="cat-hd" onclick="toggleCat('${catId}')">
+            <div class="cat-icon">${meta.emoji}</div>
+            <div class="cat-name">${catName}</div>
+            ${SVG_CHEVRON("cat-chevron")}
+          </div>
+          <div class="cat-bd">
+            <div class="lesson-grid">`;
+
+      lessons.forEach((entry, li) => {
+        const lessonLabel = `第${li+1}讲`;
+        const hasLink = hasAnyLink(entry);
+
+        if (typeof entry === "string") {
+          // 直接跳转型（字符串链接）
+          const href = (entry && entry !== "") ? entry : "#";
+          html += `<a class="lesson-btn" href="${href}"${hasLink ? ' target="_blank" rel="noopener"' : ''}>
+            <span class="lnum">${li+1}</span>讲
+          </a>`;
+        } else {
+          // 弹窗型（对象，含子项）
+          const dataStr = encodeURIComponent(JSON.stringify(entry));
+          html += `<button class="lesson-btn${hasLink ? "" : " empty"}"
+            ${hasLink ? `onclick="openSheet(this,'${lessonLabel}','${catName}')"` : "disabled"}
+            data-sub="${dataStr}">
+            <span class="lnum">${li+1}</span>讲
+          </button>`;
+        }
+      });
+
+      html += `</div></div></div>`;
+    });
+
+    html += `</div></div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ── 弹窗逻辑 ──
+function openSheet(btn, lessonName, catName) {
+  const entry = JSON.parse(decodeURIComponent(btn.dataset.sub));
+
+  // 收集所有有效子链接
+  const validLinks = Object.entries(entry).filter(([, url]) => !!url);
+
+  // 只有 1 个有效链接 → 直接跳转，不弹窗
+  if (validLinks.length === 1) {
+    window.open(validLinks[0][1], "_blank", "noopener");
+    return;
+  }
+
+  // 0 个有效链接 → 不响应
+  if (validLinks.length === 0) return;
+
+  // 2 个及以上 → 弹出选择面板
+  document.getElementById("sheetLessonName").textContent = lessonName;
+  document.getElementById("sheetCatName").textContent = catName;
+
+  const btns = document.getElementById("sheetBtns");
+  btns.innerHTML = "";
+  Object.entries(entry).forEach(([label, url]) => {
+    const m = SUB_META[label] || { cls: "", emoji: "▶️" };
+    const isEmpty = !url;
+    const el = document.createElement(isEmpty ? "div" : "a");
+    el.className = `sub-btn ${m.cls}${isEmpty ? " empty" : ""}`;
+    if (!isEmpty) { el.href = url; el.target = "_blank"; el.rel = "noopener"; }
+    el.innerHTML = `
+      <div class="sub-icon">${m.emoji}</div>
+      <span class="sub-label">${label}</span>
+      <span class="sub-arrow">›</span>`;
+    btns.appendChild(el);
+  });
+
+  document.getElementById("sheetMask").classList.add("show");
+  document.body.style.overflow = "hidden";
+}
+
+function hideSheet() {
+  document.getElementById("sheetMask").classList.remove("show");
+  document.body.style.overflow = "";
+}
+
+function closeSheet(e) {
+  if (e.target === document.getElementById("sheetMask")) hideSheet();
+}
+
+// ESC 关闭
+document.addEventListener("keydown", e => { if (e.key === "Escape") hideSheet(); });
+
+function toggleGrade(id) { document.getElementById(id).classList.toggle("open"); }
+function toggleCat(id)   { document.getElementById(id).classList.toggle("open"); }
+
+// ── 渲染 Tab + 面板 ──
+const bar = document.getElementById("seasonBar");
+const app = document.getElementById("app");
+const seasons = Object.entries(DATA);
+let activeIdx = 0;
+
+seasons.forEach(([name, data], i) => {
+  const tab = document.createElement("div");
+  tab.className = "s-tab" + (i === 0 ? " active" : "");
+  tab.textContent = `${data.icon} ${name}`;
+  tab.onclick = () => switchSeason(i);
+  bar.appendChild(tab);
+
+  const panel = document.createElement("div");
+  panel.className = "season-panel" + (i === 0 ? " active" : "");
+  panel.id = `panel-${i}`;
+  panel.innerHTML = renderSeason(name, data);
+  app.appendChild(panel);
+});
+
+function switchSeason(idx) {
+  if (idx === activeIdx) return;
+  document.querySelectorAll(".s-tab")[activeIdx].classList.remove("active");
+  document.getElementById(`panel-${activeIdx}`).classList.remove("active");
+  activeIdx = idx;
+  document.querySelectorAll(".s-tab")[activeIdx].classList.add("active");
+  document.getElementById(`panel-${activeIdx}`).classList.add("active");
+}
+</script>
+</body>
+</html>

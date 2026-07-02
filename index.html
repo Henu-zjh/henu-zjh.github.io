@@ -328,6 +328,37 @@
       cursor: pointer;
     }
     .sheet-cancel:active { background: #e5e6ea; }
+
+    /* ── 年级详情页 ── */
+    .grade-detail-bar {
+      background: white;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .back-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: #f0f2f8;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .back-btn:active { background: #e0e3ef; }
+    .back-btn svg { width:18px;height:18px;fill:none;stroke:#555;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round; }
+    .detail-title { font-size: 1rem; font-weight: 700; flex: 1; }
+    .detail-season { font-size: 0.75rem; color: #aaa; }
+
+    /* 年级卡片（主列表，不再展开）*/
+    .grade-card { cursor: pointer; }
+    .grade-card:active { opacity: 0.85; }
   </style>
 </head>
 <body>
@@ -777,9 +808,7 @@ const DATA = {
   // 继续添加学期：秋季/寒假 同理
 };
 
-// ═══════════════════════════════════════════════
-//  子项配置（样式 + 图标）
-// ═══════════════════════════════════════════════
+// ── 常量 ──
 const SUB_META = {
   "本讲巩固": { cls: "sub-gong",   emoji: "📝" },
   "基础过关": { cls: "sub-jichu",  emoji: "✅" },
@@ -787,7 +816,6 @@ const SUB_META = {
   "课本":     { cls: "sub-keben",  emoji: "📖" },
   "加油站":   { cls: "sub-jyz",    emoji: "⛽" }
 };
-
 const GRADE_COLORS = ["g1","g2","g3","g4","g5","g6"];
 const CAT_META = {
   "重难点预习": { cls: "cat-z", emoji: "🎯" },
@@ -797,159 +825,170 @@ const CAT_META = {
 const SVG_CHEVRON = (cls) =>
   `<svg class="${cls}" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`;
 
-// 判断某讲是否有任意子链接
 function hasAnyLink(entry) {
   if (typeof entry === "string") return !!entry;
   return Object.values(entry).some(v => !!v);
 }
 
-function renderSeason(seasonName, seasonData) {
-  const grades = Object.entries(seasonData.grades);
-  let html = `<div class="content">`;
-  grades.forEach(([gradeName, cats], gi) => {
-    const colorCls = GRADE_COLORS[gi] || "g1";
-    const catCount = Object.keys(cats).length;
-    const lessonCount = Object.values(cats).reduce((sum, lessons) => {
-      return sum + lessons.filter(l => hasAnyLink(l)).length;
-    }, 0);
-    const shortName = gradeName.replace("年级", "");
+// ── 渲染分类+讲次 ──
+function renderCats(cats, seasonName, gi) {
+  let html = '';
+  Object.entries(cats).forEach(([catName, lessons], ci) => {
+    const meta = CAT_META[catName] || { cls: "cat-z", emoji: "📖" };
+    const catId = `cat-${seasonName}-${gi}-${ci}`;
     html += `
-    <div class="grade-card" id="gc-${seasonName}-${gi}">
-      <div class="grade-hd" onclick="toggleGrade('gc-${seasonName}-${gi}')">
-        <div class="grade-badge ${colorCls}">${shortName}</div>
-        <div class="grade-title">${gradeName}</div>
-        <div class="grade-count">${catCount} 类 · ${lessonCount} 讲</div>
-        ${SVG_CHEVRON("chevron")}
-      </div>
-      <div class="grade-bd">`;
-
-    Object.entries(cats).forEach(([catName, lessons], ci) => {
-      const meta = CAT_META[catName] || { cls: "cat-z", emoji: "📖" };
-      const catId = `cat-${seasonName}-${gi}-${ci}`;
-      // 每讲独立判断类型（同一分类内可混合直接链接和子项）
-
-      html += `
-        <div class="cat-item ${meta.cls}" id="${catId}">
-          <div class="cat-hd" onclick="toggleCat('${catId}')">
-            <div class="cat-icon">${meta.emoji}</div>
-            <div class="cat-name">${catName}</div>
-            ${SVG_CHEVRON("cat-chevron")}
-          </div>
-          <div class="cat-bd">
-            <div class="lesson-grid">`;
-
-      lessons.forEach((entry, li) => {
-        const lessonLabel = `第${li+1}讲`;
-        const hasLink = hasAnyLink(entry);
-
-        if (typeof entry === "string") {
-          // 直接跳转型（字符串链接）
-          const href = (entry && entry !== "") ? entry : "#";
-          html += `<a class="lesson-btn" href="${href}"${hasLink ? ' target="_blank" rel="noopener"' : ''}>
-            <span class="lnum">${li+1}</span>讲
-          </a>`;
-        } else {
-          // 弹窗型（对象，含子项）
-          const dataStr = encodeURIComponent(JSON.stringify(entry));
-          html += `<button class="lesson-btn${hasLink ? "" : " empty"}"
-            ${hasLink ? `onclick="openSheet(this,'${lessonLabel}','${catName}')"` : "disabled"}
-            data-sub="${dataStr}">
-            <span class="lnum">${li+1}</span>讲
-          </button>`;
-        }
-      });
-
-      html += `</div></div></div>`;
+      <div class="cat-item ${meta.cls}" id="${catId}">
+        <div class="cat-hd" onclick="toggleCat('${catId}')">
+          <div class="cat-icon">${meta.emoji}</div>
+          <div class="cat-name">${catName}</div>
+          ${SVG_CHEVRON("cat-chevron")}
+        </div>
+        <div class="cat-bd"><div class="lesson-grid">`;
+    lessons.forEach((entry, li) => {
+      const lessonLabel = `第${li+1}讲`;
+      const hasLink = hasAnyLink(entry);
+      if (typeof entry === "string") {
+        const href = entry || "#";
+        html += `<a class="lesson-btn" href="${href}"${hasLink ? ' target="_blank" rel="noopener"' : ''}>
+          <span class="lnum">${li+1}</span>讲</a>`;
+      } else {
+        const dataStr = encodeURIComponent(JSON.stringify(entry));
+        html += `<button class="lesson-btn${hasLink ? "" : " empty"}"
+          ${hasLink ? `onclick="openSheet(this,'${lessonLabel}','${catName}')"` : "disabled"}
+          data-sub="${dataStr}"><span class="lnum">${li+1}</span>讲</button>`;
+      }
     });
-
-    html += `</div></div>`;
+    html += `</div></div></div>`;
   });
-  html += `</div>`;
   return html;
 }
 
-// ── 弹窗逻辑 ──
+// ── 渲染主列表（学期 Tab + 年级卡片）──
+function renderMain() {
+  const bar = document.getElementById('seasonBar');
+  const app = document.getElementById('app');
+  bar.style.display = '';
+  app.innerHTML = '';
+  const seasons = Object.entries(DATA);
+  let activeIdx = 0;
+
+  seasons.forEach(([name, data], si) => {
+    const tab = document.createElement('div');
+    tab.className = 's-tab' + (si === 0 ? ' active' : '');
+    tab.textContent = `${data.icon} ${name}`;
+    tab.onclick = () => {
+      document.querySelectorAll('.s-tab')[activeIdx].classList.remove('active');
+      document.getElementById(`panel-${activeIdx}`).classList.remove('active');
+      activeIdx = si;
+      tab.classList.add('active');
+      document.getElementById(`panel-${si}`).classList.add('active');
+    };
+    bar.appendChild(tab);
+
+    const panel = document.createElement('div');
+    panel.className = 'season-panel' + (si === 0 ? ' active' : '');
+    panel.id = `panel-${si}`;
+
+    const grades = Object.entries(data.grades);
+    let html = '<div class="content">';
+    grades.forEach(([gradeName, cats], gi) => {
+      const colorCls = GRADE_COLORS[gi] || "g1";
+      const catCount = Object.keys(cats).length;
+      const lessonCount = Object.values(cats).reduce((s, ls) => s + ls.filter(hasAnyLink).length, 0);
+      const shortName = gradeName.replace("年级", "");
+      html += `
+      <div class="grade-card" id="gc-${name}-${gi}">
+        <div class="grade-hd" onclick="toggleGrade('gc-${name}-${gi}')">
+          <div class="grade-badge ${colorCls}">${shortName}</div>
+          <div class="grade-title">${gradeName}</div>
+          <div class="grade-count">${catCount} 类 · ${lessonCount} 讲</div>
+          ${SVG_CHEVRON("chevron")}
+        </div>
+        <div class="grade-bd">${renderCats(cats, name, gi)}</div>
+      </div>`;
+    });
+    html += '</div>';
+    panel.innerHTML = html;
+    app.appendChild(panel);
+  });
+}
+
+// ── 渲染单年级页（无导航，扫码专用）──
+function renderGradePage(si, gi) {
+  const seasons = Object.entries(DATA);
+  if (si >= seasons.length) return;
+  const [sName, sData] = seasons[si];
+  const grades = Object.entries(sData.grades);
+  if (gi >= grades.length) return;
+  const [gName, cats] = grades[gi];
+  const colorCls = GRADE_COLORS[gi] || "g1";
+  const shortName = gName.replace("年级", "");
+  const catCount = Object.keys(cats).length;
+  const lessonCount = Object.values(cats).reduce((s, ls) => s + ls.filter(hasAnyLink).length, 0);
+
+  // 隐藏学期 Tab，只显示该年级
+  document.getElementById('seasonBar').style.display = 'none';
+  document.getElementById('app').innerHTML = `
+    <div class="content" style="padding-top:16px">
+      <div class="grade-card open" style="margin-bottom:0;cursor:default">
+        <div class="grade-hd" style="cursor:default">
+          <div class="grade-badge ${colorCls}">${shortName}</div>
+          <div class="grade-title">${gName}</div>
+          <div class="grade-count">${catCount} 类 · ${lessonCount} 讲</div>
+        </div>
+        <div class="grade-bd">${renderCats(cats, sName, gi)}</div>
+      </div>
+    </div>`;
+  window.scrollTo(0, 0);
+}
+
+// ── 路由 ──
+function route() {
+  const m = location.hash.match(/^#g(\d+)-(\d+)$/);
+  if (m) {
+    renderGradePage(+m[1], +m[2]);
+  } else {
+    renderMain();
+  }
+}
+window.addEventListener('hashchange', route);
+
+// ── 弹窗 ──
 function openSheet(btn, lessonName, catName) {
   const entry = JSON.parse(decodeURIComponent(btn.dataset.sub));
-
-  // 收集所有有效子链接
-  const validLinks = Object.entries(entry).filter(([, url]) => !!url);
-
-  // 只有 1 个有效链接 → 直接跳转，不弹窗
-  if (validLinks.length === 1) {
-    window.open(validLinks[0][1], "_blank", "noopener");
-    return;
-  }
-
-  // 0 个有效链接 → 不响应
-  if (validLinks.length === 0) return;
-
-  // 2 个及以上 → 弹出选择面板
+  const valid = Object.entries(entry).filter(([,u]) => !!u);
+  if (valid.length === 1) { window.open(valid[0][1], "_blank", "noopener"); return; }
+  if (valid.length === 0) return;
   document.getElementById("sheetLessonName").textContent = lessonName;
   document.getElementById("sheetCatName").textContent = catName;
-
   const btns = document.getElementById("sheetBtns");
   btns.innerHTML = "";
   Object.entries(entry).forEach(([label, url]) => {
-    const m = SUB_META[label] || { cls: "", emoji: "▶️" };
-    const isEmpty = !url;
-    const el = document.createElement(isEmpty ? "div" : "a");
-    el.className = `sub-btn ${m.cls}${isEmpty ? " empty" : ""}`;
-    if (!isEmpty) { el.href = url; el.target = "_blank"; el.rel = "noopener"; }
-    el.innerHTML = `
-      <div class="sub-icon">${m.emoji}</div>
-      <span class="sub-label">${label}</span>
-      <span class="sub-arrow">›</span>`;
+    const m2 = SUB_META[label] || { cls: "", emoji: "▶️" };
+    const empty = !url;
+    const el = document.createElement(empty ? "div" : "a");
+    el.className = `sub-btn ${m2.cls}${empty ? " empty" : ""}`;
+    if (!empty) { el.href = url; el.target = "_blank"; el.rel = "noopener"; }
+    el.innerHTML = `<div class="sub-icon">${m2.emoji}</div><span class="sub-label">${label}</span><span class="sub-arrow">›</span>`;
     btns.appendChild(el);
   });
-
   document.getElementById("sheetMask").classList.add("show");
   document.body.style.overflow = "hidden";
 }
-
 function hideSheet() {
   document.getElementById("sheetMask").classList.remove("show");
   document.body.style.overflow = "";
 }
-
 function closeSheet(e) {
   if (e.target === document.getElementById("sheetMask")) hideSheet();
 }
-
-// ESC 关闭
 document.addEventListener("keydown", e => { if (e.key === "Escape") hideSheet(); });
-
 function toggleGrade(id) { document.getElementById(id).classList.toggle("open"); }
 function toggleCat(id)   { document.getElementById(id).classList.toggle("open"); }
 
-// ── 渲染 Tab + 面板 ──
-const bar = document.getElementById("seasonBar");
-const app = document.getElementById("app");
-const seasons = Object.entries(DATA);
-let activeIdx = 0;
+// 启动
+route();
 
-seasons.forEach(([name, data], i) => {
-  const tab = document.createElement("div");
-  tab.className = "s-tab" + (i === 0 ? " active" : "");
-  tab.textContent = `${data.icon} ${name}`;
-  tab.onclick = () => switchSeason(i);
-  bar.appendChild(tab);
-
-  const panel = document.createElement("div");
-  panel.className = "season-panel" + (i === 0 ? " active" : "");
-  panel.id = `panel-${i}`;
-  panel.innerHTML = renderSeason(name, data);
-  app.appendChild(panel);
-});
-
-function switchSeason(idx) {
-  if (idx === activeIdx) return;
-  document.querySelectorAll(".s-tab")[activeIdx].classList.remove("active");
-  document.getElementById(`panel-${activeIdx}`).classList.remove("active");
-  activeIdx = idx;
-  document.querySelectorAll(".s-tab")[activeIdx].classList.add("active");
-  document.getElementById(`panel-${activeIdx}`).classList.add("active");
-}
 </script>
 </body>
 </html>
